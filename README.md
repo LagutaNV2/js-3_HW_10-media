@@ -1,7 +1,7 @@
 # Домашнее задание к занятию "10. Geolocation, Notification, Media"
 [![Build status](https://ci.appveyor.com/api/projects/status/oh3x25jpoutssadd?svg=true)](https://ci.appveyor.com/project/LagutaNV2/js-3-hw-10-media)
 
-https://lagutanv2.github.io/js-3_HW_10-media/
+link: https://lagutanv2.github.io/js-3_HW_10-media/
 
 **Важно**: в рамках этого задания вы будете разрабатывать **один проект**, в который добавляется новая функциональность. Поэтому все три задачи нужно делать в одном репозитории (не забудьте опубликовать проект на GitHub Pages).
 
