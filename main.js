@@ -38,8 +38,7 @@ class Post {
             resolve();
           } catch (error) {
             console.warn("Ручной ввод координат отменен");
-            // Не вызываем reject(), чтобы избежать Uncaught (in promise)
-            resolve(); // Просто завершаем промис без ошибки
+            resolve();
           }
         });
       });
@@ -49,7 +48,6 @@ class Post {
         this.coordinates = coords;
       } catch (error) {
         console.warn("Ручной ввод координат отменен");
-        // Не вызываем reject(), чтобы избежать Uncaught (in promise)
       }
     }
   }
@@ -94,18 +92,12 @@ class Post {
     //   .replace(/\u2212/g, "-");
 
     input = input.trim().replace(/[[]/g, "").replace(/\u2212/g, "-");
-
-    // Разбиваем строку по запятой
     const parts = input.split(/\s*,\s*/);
     if (parts.length !== 2) {
       throw new Error("Invalid coordinates format");
     }
-
-    // Преобразуем в числа
     const latitude = parseFloat(parts[0]);
     const longitude = parseFloat(parts[1]);
-
-    // Проверяем, являются ли они числами
     if (isNaN(latitude) || isNaN(longitude)) {
       throw new Error("Invalid coordinates format");
     }
@@ -135,7 +127,7 @@ class Post {
     const deleteBtn = postElement.querySelector(".delete-btn");
     deleteBtn.addEventListener("click", () => {
       this.onDelete();
-      postElement.remove(); // Удаляем элемент из DOM
+      postElement.remove();
     });
     return postElement;
   }
@@ -204,7 +196,6 @@ class AudioPost extends Post {
     });
   }
   renderContent() {
-    // return `<audio controls src="${this.content}"></audio>`;
     const src = `data:audio/webm;base64,${this.content}`; // Создаем URL из Base64
     return `<audio controls src="${src}"></audio>`;
   }
@@ -242,7 +233,6 @@ class VideoPost extends Post {
     });
   }
   renderContent() {
-    // return `<video controls src="${this.content}"></video>`;
     const src = `data:video/webm;base64,${this.content}`; // Создаем URL из Base64
     return `<video controls src="${src}"></video>`;
   }
