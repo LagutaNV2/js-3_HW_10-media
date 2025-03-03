@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>10.Media</title>
+</head>
+<body>
+	<!-- Основной контейнер для Timeline -->
+  <div class="timeline-container"></div>
+
+  <!-- Блок ввода контента -->
+  <div class="input-block">
+    <input type="text" class="input-field" placeholder="Введите текст...">
+
+    <div class="media-buttons">
+      <button class="audio-button">🎤</button>
+      <button class="video-button">🎥</button>
+    </div>
+
+    <div class="media-controls" style="display: none;">
+      <button class="cancel-recording">Отмена</button>
+      <span class="recording-timer">00:00</span>
+      <button class="confirm-recording">ОК</button>
+    </div>
+  </div>
+
+  <!-- Блок предпросмотра видео -->
+  <div class="video-preview" style="display: none;">
+    <video muted autoplay></video>
+  </div>
+</body>
+</html>
