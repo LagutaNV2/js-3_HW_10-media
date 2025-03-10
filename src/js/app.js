@@ -39,7 +39,7 @@ export default class App {
   }
 
   createTextPost(text) {
-    const post = new TextPost(text);
+    const post = new TextPost(text, this.timeline.posts);
     post
       .getCoordinates()
       .then(() => {
@@ -51,35 +51,35 @@ export default class App {
       });
   }
 
-  createAudioPost() {
+  async createAudioPost() {
     const post = new AudioPost("", [], this.timeline.posts);
-    post
-      .startRecording()
-      .then(() => {
-        return post.getCoordinates();
-      })
-      .then(() => {
-        this.timeline.addPost(post);
-      })
-      .catch((error) => {
-        console.error("Ошибка при создании аудио-записи:", error.message);
-        alert("Не удалось создать аудио-запись. Попробуйте снова.");
-      });
+    try {
+      await post.startRecording();
+      await post.getCoordinates();
+      this.timeline.addPost(post);
+    } catch (error) {
+      console.error("Ошибка аудио-записи:", error);
+      alert("Не удалось создать аудио-запись");
+    }
   }
 
-  createVideoPost() {
+  async createVideoPost() {
     const post = new VideoPost("", [], this.timeline.posts);
-    post
-      .startRecording()
-      .then(() => {
-        return post.getCoordinates();
-      })
-      .then(() => {
-        this.timeline.addPost(post);
-      })
-      .catch((error) => {
-        console.error("Ошибка при создании видео-записи:", error.message);
-        alert("Не удалось создать видео-запись. Попробуйте снова.");
-      });
+    try {
+      await post.startRecording();
+      await post.getCoordinates();
+      this.timeline.addPost(post);
+    } catch (error) {
+      console.error("Ошибка видео-записи:", error);
+      let errorMessage = "Не удалось создать видео-запись";
+
+      if (error.message.includes("allocate videosource")) {
+        errorMessage += ". Камера недоступна или уже используется";
+      } else if (error.message.includes("permission")) {
+        errorMessage += ". Разрешите доступ к камере в настройках браузера";
+      }
+
+      alert(errorMessage);
+    }
   }
 }

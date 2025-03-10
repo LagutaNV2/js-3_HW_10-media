@@ -1,36 +1,38 @@
-// Класс для аудио-записей
+// Класс для аудио-записей AudioPost.js
 import Post from "./Post.js";
 
 export default class AudioPost extends Post {
-  constructor(content, coordinates, posts) {
-    super("audio", content, coordinates, posts);
+  constructor(content, coordinates, posts, timestamp = null) {
+    super("audio", content, coordinates, posts, timestamp);
     this.mediaBlob = null;
   }
 
   async startRecording() {
-    return new Promise((resolve, reject) => {
-      navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then((stream) => {
-          const mediaRecorder = new MediaRecorder(stream);
-          const chunks = [];
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      const chunks = [];
 
-          mediaRecorder.ondataavailable = (event) => {
-            chunks.push(event.data);
-          };
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
 
-          mediaRecorder.onstop = async () => {
+      // Возвращаем промис, который ждет остановки записи
+      await new Promise((resolve, reject) => {
+        mediaRecorder.onstop = async () => {
+          try {
             this.mediaBlob = new Blob(chunks, { type: "audio/webm" });
-            // this.content = URL.createObjectURL(this.mediaBlob);
-            this.content = await this.blobToBase64(this.mediaBlob); // Используем метод из базового класса
+            this.content = await this.blobToBase64(this.mediaBlob);
             resolve();
-          };
-
-          mediaRecorder.start();
-          setTimeout(() => mediaRecorder.stop(), 5000); // Запись 5 секунд
-        })
-        .catch(reject);
-    });
+          } catch (error) {
+            reject(error);
+          }
+        };
+        mediaRecorder.start();
+        setTimeout(() => mediaRecorder.stop(), 5000);
+      });
+    } catch (error) {
+      console.error("Ошибка записи аудио:", error);
+      throw error;
+    }
   }
 
   renderContent() {

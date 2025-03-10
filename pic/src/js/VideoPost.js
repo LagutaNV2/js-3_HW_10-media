@@ -11,13 +11,15 @@ export default class VideoPost extends Post {
     // Проверка поддержки API getUserMedia
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       console.error("API getUserMedia не поддерживается в вашем браузере.");
-      alert("Ваш браузер не поддерживает запись аудио/видео. Попробуйте использовать другой браузер.");
+      alert(
+        "Ваш браузер не поддерживает запись аудио/видео. Попробуйте использовать другой браузер.",
+      );
       return;
     }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia(
-        type === "audio" ? { audio: true } : { video: true, audio: true }
+        type === "audio" ? { audio: true } : { video: true, audio: true },
       );
 
       // Скрываем кнопки микрофона и камеры
@@ -38,7 +40,9 @@ export default class VideoPost extends Post {
         clearInterval(this.timerInterval);
         this.showMediaButtons(); // Показываем кнопки после завершения записи
 
-        const blob = new Blob(chunks, { type: type === "audio" ? "audio/webm" : "video/webm" });
+        const blob = new Blob(chunks, {
+          type: type === "audio" ? "audio/webm" : "video/webm",
+        });
         this.content = await this.blobToBase64(blob);
 
         if (type === "video") {
@@ -53,9 +57,12 @@ export default class VideoPost extends Post {
       mediaRecorder.start();
       this.mediaRecorder = mediaRecorder; // Сохраняем ссылку на mediaRecorder
     } catch (error) {
-      console.error("Ошибка при получении доступа к медиаустройствам:", error.message);
+      console.error(
+        "Ошибка при получении доступа к медиаустройствам:",
+        error.message,
+      );
       alert(
-        "Не удалось получить доступ к микрофону/камере. Проверьте настройки браузера или используйте другой браузер."
+        "Не удалось получить доступ к микрофону/камере. Проверьте настройки браузера или используйте другой браузер.",
       );
     }
   }

@@ -37,20 +37,52 @@ export default class Timeline {
   }
 
   saveToLocalStorage() {
-    const postData = this.posts.map((post) => post.toJSON());
-    localStorage.setItem("timeline-posts", JSON.stringify(postData));
+    try {
+      const postData = this.posts.map((post) => post.toJSON());
+      const dataSize = new TextEncoder().encode(
+        JSON.stringify(postData),
+      ).length;
+      if (dataSize > 5 * 1024 * 1024) {
+        // 5MB
+        alert("Превышен лимит хранилища! Удалите старые посты");
+        return;
+      }
+      localStorage.setItem("timeline-posts", JSON.stringify(postData));
+    } catch (error) {
+      console.error("Ошибка сохранения данных:", error);
+    }
   }
 
   createPostFromData(data) {
-    switch (data.type) {
-      case "text":
-        return new TextPost(data.content, data.coordinates, this.posts);
-      case "audio":
-        return new AudioPost(data.content, data.coordinates, this.posts);
-      case "video":
-        return new VideoPost(data.content, data.coordinates, this.posts);
-      default:
-        return null;
+    try {
+      switch (data.type) {
+        case "text":
+          return new TextPost(
+            data.content,
+            data.coordinates,
+            this.posts,
+            data.timestamp,
+          );
+        case "audio":
+          return new AudioPost(
+            data.content,
+            data.coordinates,
+            this.posts,
+            data.timestamp,
+          );
+        case "video":
+          return new VideoPost(
+            data.content,
+            data.coordinates,
+            this.posts,
+            data.timestamp,
+          );
+        default:
+          return null;
+      }
+    } catch (error) {
+      console.error("Ошибка создания поста:", error);
+      return null;
     }
   }
 }

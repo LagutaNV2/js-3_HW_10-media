@@ -39,29 +39,37 @@ export default class App {
       this.createVideoPost();
     });
 
-    document.querySelector(".cancel-recording").addEventListener("click", () => {
-      if (this.mediaRecorder && this.mediaRecorder.state === "recording") {
-        this.mediaRecorder.stop();
-        this.showMediaButtons();
-        clearInterval(this.timerInterval);
-        if (this.type === "video") {
-          this.stopVideoPreview(this.stream); // Останавливаем предпросмотр видео
+    document
+      .querySelector(".cancel-recording")
+      .addEventListener("click", () => {
+        if (this.mediaRecorder && this.mediaRecorder.state === "recording") {
+          this.mediaRecorder.stop();
+          this.showMediaButtons();
+          clearInterval(this.timerInterval);
+          if (this.type === "video") {
+            this.stopVideoPreview(this.stream); // Останавливаем предпросмотр видео
+          }
         }
-      }
-    });
+      });
 
-    document.querySelector(".confirm-recording").addEventListener("click", () => {
-      if (this.mediaRecorder && this.mediaRecorder.state === "recording") {
-        this.mediaRecorder.stop();
-      }
-    });
+    document
+      .querySelector(".confirm-recording")
+      .addEventListener("click", () => {
+        if (this.mediaRecorder && this.mediaRecorder.state === "recording") {
+          this.mediaRecorder.stop();
+        }
+      });
   }
 
   async checkDeviceAvailability() {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoInputs = devices.filter((device) => device.kind === "videoinput");
-      const audioInputs = devices.filter((device) => device.kind === "audioinput");
+      const videoInputs = devices.filter(
+        (device) => device.kind === "videoinput",
+      );
+      const audioInputs = devices.filter(
+        (device) => device.kind === "audioinput",
+      );
 
       if (videoInputs.length === 0) {
         throw new Error("Камера недоступна.");
@@ -105,7 +113,6 @@ export default class App {
         });
     });
   }
-
 
   createVideoPost() {
     this.checkDeviceAvailability().then(() => {

@@ -1,10 +1,10 @@
-// Базовый класс для всех типов записей
+// Базовый класс для всех типов записей Post.js
 export default class Post {
-  constructor(type, content, coordinates, posts) {
+  constructor(type, content, coordinates, posts, timestamp = null) {
     this.type = type;
     this.content = content;
-    this.coordinates = coordinates;
-    this.timestamp = new Date();
+    this.coordinates = coordinates || [];
+    this.timestamp = timestamp ? new Date(timestamp) : new Date();
     this.posts = posts; // Ссылка на массив всех записей
   }
 
@@ -34,14 +34,14 @@ export default class Post {
             ];
             resolve();
           },
-          async () => {
+          async (error) => {
             try {
               const coords = await this.showManualCoordinatesModal();
               this.coordinates = coords;
               resolve();
-            } catch (error) {
-              console.warn("Ручной ввод координат отменен");
-              resolve();            }
+            } catch (modalError) {
+              reject(modalError); // Отклоняем промис при отмене
+            }
           },
         );
       });
@@ -93,7 +93,7 @@ export default class Post {
   }
 
   parseCoordinates(input) {
-    // Удаляем пробелы и квадратные скобки, заменяем альтернативный минус на стандартный
+    // Это не работает!
     // input = input
     //   .trim()
     //   .replace(/[\[\]]/g, "")
@@ -170,7 +170,9 @@ export default class Post {
     const index = this.posts.indexOf(this);
     if (index !== -1) {
       this.posts.splice(index, 1);
-      this.saveToLocalStorage();
+      //this.saveToLocalStorage();
+      // Вызываем метод сохранения через Timeline
+      if (this.timeline) this.timeline.saveToLocalStorage();
     }
   }
 
