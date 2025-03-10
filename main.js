@@ -2,13 +2,13 @@
 /******/ 	"use strict";
 
 ;// ./src/js/Post.js
-// Базовый класс для всех типов записей
+// Базовый класс для всех типов записей Post.js
 class Post {
-  constructor(type, content, coordinates, posts) {
+  constructor(type, content, coordinates, posts, timestamp = null) {
     this.type = type;
     this.content = content;
-    this.coordinates = coordinates;
-    this.timestamp = new Date();
+    this.coordinates = coordinates || [];
+    this.timestamp = timestamp ? new Date(timestamp) : new Date();
     this.posts = posts; // Ссылка на массив всех записей
   }
   async blobToBase64(blob) {
@@ -31,14 +31,13 @@ class Post {
         navigator.geolocation.getCurrentPosition(position => {
           this.coordinates = [position.coords.latitude, position.coords.longitude];
           resolve();
-        }, async () => {
+        }, async error => {
           try {
             const coords = await this.showManualCoordinatesModal();
             this.coordinates = coords;
             resolve();
-          } catch (error) {
-            console.warn("Ручной ввод координат отменен");
-            resolve();
+          } catch (modalError) {
+            reject(modalError); // Отклоняем промис при отмене
           }
         });
       });
@@ -85,7 +84,7 @@ class Post {
     });
   }
   parseCoordinates(input) {
-    // Удаляем пробелы и квадратные скобки, заменяем альтернативный минус на стандартный
+    // Это не работает!
     // input = input
     //   .trim()
     //   .replace(/[\[\]]/g, "")
@@ -148,7 +147,9 @@ class Post {
     const index = this.posts.indexOf(this);
     if (index !== -1) {
       this.posts.splice(index, 1);
-      this.saveToLocalStorage();
+      //this.saveToLocalStorage();
+      // Вызываем метод сохранения через Timeline
+      if (this.timeline) this.timeline.saveToLocalStorage();
     }
   }
   saveToLocalStorage() {
@@ -157,43 +158,50 @@ class Post {
   }
 }
 ;// ./src/js/TextPost.js
-// Класс для текстовых записей
+// Класс для текстовых записей TextPost.js
 
 class TextPost extends Post {
-  constructor(content, coordinates, posts) {
-    super("text", content, coordinates, posts);
+  constructor(content, coordinates, posts, timestamp = null) {
+    super("text", content, coordinates, posts, timestamp);
   }
 }
 ;// ./src/js/AudioPost.js
-// Класс для аудио-записей
+// Класс для аудио-записей AudioPost.js
 
 class AudioPost extends Post {
-  constructor(content, coordinates, posts) {
-    super("audio", content, coordinates, posts);
+  constructor(content, coordinates, posts, timestamp = null) {
+    super("audio", content, coordinates, posts, timestamp);
     this.mediaBlob = null;
   }
   async startRecording() {
-    return new Promise((resolve, reject) => {
-      navigator.mediaDevices.getUserMedia({
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: true
-      }).then(stream => {
-        const mediaRecorder = new MediaRecorder(stream);
-        const chunks = [];
-        mediaRecorder.ondataavailable = event => {
-          chunks.push(event.data);
-        };
+      });
+      const mediaRecorder = new MediaRecorder(stream);
+      const chunks = [];
+      mediaRecorder.ondataavailable = e => chunks.push(e.data);
+
+      // Возвращаем промис, который ждет остановки записи
+      await new Promise((resolve, reject) => {
         mediaRecorder.onstop = async () => {
-          this.mediaBlob = new Blob(chunks, {
-            type: "audio/webm"
-          });
-          // this.content = URL.createObjectURL(this.mediaBlob);
-          this.content = await this.blobToBase64(this.mediaBlob); // Используем метод из базового класса
-          resolve();
+          try {
+            this.mediaBlob = new Blob(chunks, {
+              type: "audio/webm"
+            });
+            this.content = await this.blobToBase64(this.mediaBlob);
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
         };
         mediaRecorder.start();
-        setTimeout(() => mediaRecorder.stop(), 5000); // Запись 5 секунд
-      }).catch(reject);
-    });
+        setTimeout(() => mediaRecorder.stop(), 5000);
+      });
+    } catch (error) {
+      console.error("Ошибка записи аудио:", error);
+      throw error;
+    }
   }
   renderContent() {
     const src = `data:audio/webm;base64,${this.content}`; // Создаем URL из Base64
@@ -204,33 +212,59 @@ class AudioPost extends Post {
 // Класс для видео-записей
 
 class VideoPost extends Post {
-  constructor(content, coordinates, posts) {
-    super("video", content, coordinates, posts);
+  constructor(content, coordinates, posts, timestamp = null) {
+    super("video", content, coordinates, posts, timestamp);
     this.mediaBlob = null;
+    this.isRecording = false;
   }
   async startRecording() {
-    return new Promise((resolve, reject) => {
-      navigator.mediaDevices.getUserMedia({
+    if (!MediaRecorder.isTypeSupported("video/webm")) {
+      throw new Error("Формат video/webm не поддерживается браузером");
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error("Браузер не поддерживает доступ к медиаустройствам");
+    }
+    if (this.isRecording) throw new Error("Запись уже идет");
+    this.isRecording = true;
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
         video: true,
+        // video: { facingMode: "user" }, // Используем фронтальную камеру
         audio: true
-      }).then(stream => {
-        const mediaRecorder = new MediaRecorder(stream);
-        const chunks = [];
-        mediaRecorder.ondataavailable = event => {
-          chunks.push(event.data);
-        };
+      });
+      const mediaRecorder = new MediaRecorder(stream);
+      const chunks = [];
+      mediaRecorder.ondataavailable = e => chunks.push(e.data);
+      await new Promise((resolve, reject) => {
         mediaRecorder.onstop = async () => {
-          this.mediaBlob = new Blob(chunks, {
-            type: "video/webm"
-          });
-          // this.content = URL.createObjectURL(this.mediaBlob);
-          this.content = await this.blobToBase64(this.mediaBlob); // Используем метод из базового класса
-          resolve();
+          try {
+            this.mediaBlob = new Blob(chunks, {
+              type: "video/webm"
+            });
+            this.content = await this.blobToBase64(this.mediaBlob);
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
         };
+        mediaRecorder.onerror = error => reject(error);
         mediaRecorder.start();
-        setTimeout(() => mediaRecorder.stop(), 5000); // Запись 5 секунд
-      }).catch(reject);
-    });
+        setTimeout(() => mediaRecorder.stop(), 5000);
+      });
+    } catch (error) {
+      console.error("Ошибка записи видео:", error);
+      throw error;
+    } finally {
+      if (stream) {
+        stream.getTracks().forEach(track => {
+          track.stop(); // Освобождаем ресурсы
+          track.enabled = false;
+        });
+      }
+      this.isRecording = false;
+      stream = null;
+    }
   }
   renderContent() {
     const src = `data:video/webm;base64,${this.content}`; // Создаем URL из Base64
@@ -271,19 +305,34 @@ class Timeline {
     this.container.prepend(postElement);
   }
   saveToLocalStorage() {
-    const postData = this.posts.map(post => post.toJSON());
-    localStorage.setItem("timeline-posts", JSON.stringify(postData));
+    try {
+      const postData = this.posts.map(post => post.toJSON());
+      const dataSize = new TextEncoder().encode(JSON.stringify(postData)).length;
+      if (dataSize > 5 * 1024 * 1024) {
+        // 5MB
+        alert("Превышен лимит хранилища! Удалите старые посты");
+        return;
+      }
+      localStorage.setItem("timeline-posts", JSON.stringify(postData));
+    } catch (error) {
+      console.error("Ошибка сохранения данных:", error);
+    }
   }
   createPostFromData(data) {
-    switch (data.type) {
-      case "text":
-        return new TextPost(data.content, data.coordinates, this.posts);
-      case "audio":
-        return new AudioPost(data.content, data.coordinates, this.posts);
-      case "video":
-        return new VideoPost(data.content, data.coordinates, this.posts);
-      default:
-        return null;
+    try {
+      switch (data.type) {
+        case "text":
+          return new TextPost(data.content, data.coordinates, this.posts, data.timestamp);
+        case "audio":
+          return new AudioPost(data.content, data.coordinates, this.posts, data.timestamp);
+        case "video":
+          return new VideoPost(data.content, data.coordinates, this.posts, data.timestamp);
+        default:
+          return null;
+      }
+    } catch (error) {
+      console.error("Ошибка создания поста:", error);
+      return null;
     }
   }
 }
@@ -325,7 +374,7 @@ class App {
     });
   }
   createTextPost(text) {
-    const post = new TextPost(text);
+    const post = new TextPost(text, this.timeline.posts);
     post.getCoordinates().then(() => {
       this.timeline.addPost(post);
     }).catch(error => {
@@ -333,27 +382,33 @@ class App {
       alert("Не удалось получить координаты. Попробуйте снова.");
     });
   }
-  createAudioPost() {
+  async createAudioPost() {
     const post = new AudioPost("", [], this.timeline.posts);
-    post.startRecording().then(() => {
-      return post.getCoordinates();
-    }).then(() => {
+    try {
+      await post.startRecording();
+      await post.getCoordinates();
       this.timeline.addPost(post);
-    }).catch(error => {
-      console.error("Ошибка при создании аудио-записи:", error.message);
-      alert("Не удалось создать аудио-запись. Попробуйте снова.");
-    });
+    } catch (error) {
+      console.error("Ошибка аудио-записи:", error);
+      alert("Не удалось создать аудио-запись");
+    }
   }
-  createVideoPost() {
+  async createVideoPost() {
     const post = new VideoPost("", [], this.timeline.posts);
-    post.startRecording().then(() => {
-      return post.getCoordinates();
-    }).then(() => {
+    try {
+      await post.startRecording();
+      await post.getCoordinates();
       this.timeline.addPost(post);
-    }).catch(error => {
-      console.error("Ошибка при создании видео-записи:", error.message);
-      alert("Не удалось создать видео-запись. Попробуйте снова.");
-    });
+    } catch (error) {
+      console.error("Ошибка видео-записи:", error);
+      let errorMessage = "Не удалось создать видео-запись";
+      if (error.message.includes("allocate videosource")) {
+        errorMessage += ". Камера недоступна или уже используется";
+      } else if (error.message.includes("permission")) {
+        errorMessage += ". Разрешите доступ к камере в настройках браузера";
+      }
+      alert(errorMessage);
+    }
   }
 }
 ;// ./src/index.js
